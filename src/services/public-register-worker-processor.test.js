@@ -105,6 +105,51 @@ describe('processPublicRegisterMessage', () => {
     expect(deletePublicRegisterMessage).not.toHaveBeenCalled()
   })
 
+  it('upserts required fields only when optional fields are absent', async () => {
+    const server = buildServer()
+    const requiredOnly = {
+      applicationType: payload.applicationType,
+      eventType: payload.eventType,
+      applicationId: payload.applicationId,
+      applicationReference: payload.applicationReference
+    }
+
+    await processPublicRegisterMessage(server, buildMessage(requiredOnly))
+
+    expect(upsertApplicationSubmission).toHaveBeenCalledWith(
+      server.db,
+      requiredOnly
+    )
+    expect(deletePublicRegisterMessage).toHaveBeenCalledWith(
+      sqsQueueName,
+      'receipt-1'
+    )
+  })
+
+  it('omits blank optional fields and empty marine plan area values', async () => {
+    const server = buildServer()
+    const withBlanks = {
+      applicationType: payload.applicationType,
+      eventType: payload.eventType,
+      applicationId: payload.applicationId,
+      applicationReference: payload.applicationReference,
+      projectName: '   ',
+      marinePlanAreas: ['South', '', '  ', 'North'],
+      dateSubmitted: '',
+      status: ' '
+    }
+
+    await processPublicRegisterMessage(server, buildMessage(withBlanks))
+
+    expect(upsertApplicationSubmission).toHaveBeenCalledWith(server.db, {
+      applicationType: payload.applicationType,
+      eventType: payload.eventType,
+      applicationId: payload.applicationId,
+      applicationReference: payload.applicationReference,
+      marinePlanAreas: ['South', 'North']
+    })
+  })
+
   it('does not delete the message when upsert fails so SQS can retry then dead-letter it', async () => {
     const server = buildServer()
     vi.mocked(upsertApplicationSubmission).mockRejectedValueOnce(
