@@ -120,8 +120,8 @@ git config --global core.autocrlf false
 | :------------------------------ | :------------------------------------- |
 | `GET: /health`                  | Health                                 |
 | `GET: /application-submissions` | List published application submissions |
-| `GET: /example`                 | Example API (remove as needed)         |
-| `GET: /example/<id>`            | Example API (remove as needed)         |
+| `GET: /documentation`           | Redoc API documentation                |
+| `GET: /swagger.json`            | OpenAPI specification                  |
 
 ## Development helpers
 
