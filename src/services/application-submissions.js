@@ -6,7 +6,6 @@ const listProjection = {
   applicationType: 1,
   applicationReference: 1,
   projectName: 1,
-  marinePlanArea: 1,
   marinePlanAreas: 1,
   dateSubmitted: 1,
   status: 1

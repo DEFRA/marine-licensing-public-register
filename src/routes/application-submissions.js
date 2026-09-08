@@ -7,7 +7,6 @@ const applicationSubmissionSchema = Joi.object({
   applicationType: Joi.string().required(),
   applicationReference: Joi.string().required(),
   projectName: Joi.string().optional(),
-  marinePlanArea: Joi.string().optional(),
   marinePlanAreas: Joi.array().items(Joi.string()).optional(),
   dateSubmitted: Joi.string().optional(),
   status: Joi.string().optional()
