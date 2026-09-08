@@ -29,26 +29,30 @@ export const mongoDb = {
       server.decorate('request', 'locker', () => locker, { apply: true })
 
       server.events.on('stop', async () => {
-        server.logger.info('Closing Mongo client')
-        try {
-          // MongoDB 7 interrupts checked-out connections on close before sessions
-          // finish releasing them, which becomes an unhandled MongoClientClosedError.
-          await waitForMongoIdle(client)
-        } catch (e) {
-          server.logger.error(e, 'failed waiting for mongo idle')
-        }
-
-        try {
-          await client.close()
-        } catch (e) {
-          server.logger.error(e, 'failed to close mongo client')
-        }
+        await closeMongoClient(server, client)
       })
     }
   }
 }
 
-async function endActiveSessions(client) {
+export async function closeMongoClient(server, client) {
+  server.logger.info('Closing Mongo client')
+  try {
+    // MongoDB 7 interrupts checked-out connections on close before sessions
+    // finish releasing them, which becomes an unhandled MongoClientClosedError.
+    await waitForMongoIdle(client)
+  } catch (e) {
+    server.logger.error(e, 'failed waiting for mongo idle')
+  }
+
+  try {
+    await client.close()
+  } catch (e) {
+    server.logger.error(e, 'failed to close mongo client')
+  }
+}
+
+export async function endActiveSessions(client) {
   const sessions = client.s?.activeSessions
   if (!sessions?.size) {
     return
@@ -61,7 +65,7 @@ async function endActiveSessions(client) {
   )
 }
 
-function checkedOutConnectionCount(client) {
+export function checkedOutConnectionCount(client) {
   const servers = client.topology?.s?.servers
   if (!servers) {
     return 0
@@ -74,7 +78,7 @@ function checkedOutConnectionCount(client) {
   return count
 }
 
-async function waitForMongoIdle(client, timeoutMs = 200) {
+export async function waitForMongoIdle(client, timeoutMs = 200) {
   const deadline = Date.now() + timeoutMs
 
   do {
