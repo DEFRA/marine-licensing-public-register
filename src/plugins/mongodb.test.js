@@ -4,15 +4,20 @@ import { LockManager } from 'mongo-locks'
 describe('#mongoDb', () => {
   let server
 
+  // Dynamic import needed — server.js pulls in config.js, which reads MONGO_URI
+  // at import time, so the import is deferred until the shared mongod's URI is
+  // in the environment.
+  beforeAll(async () => {
+    const { createServer } = await import('#/server.js')
+
+    server = await createServer()
+    await server.initialize()
+    // LockManager fires a createIndex during construction that isn't awaited.
+    // Wait for it to settle so it doesn't reject during teardown.
+    await server.db.collection('mongo-locks').createIndex({ id: 1 })
+  })
+
   describe('Set up', () => {
-    beforeAll(async () => {
-      // Dynamic import needed due to config being updated by vitest-mongodb
-      const { createServer } = await import('#/server.js')
-
-      server = await createServer()
-      await server.initialize()
-    })
-
     test('Server should have expected MongoDb decorators', () => {
       expect(server.db).toBeInstanceOf(Db)
       expect(server.mongoClient).toBeInstanceOf(MongoClient)
@@ -20,28 +25,24 @@ describe('#mongoDb', () => {
     })
 
     test('MongoDb should have expected database name', () => {
-      expect(server.db.databaseName).toBe('marine-licensing-public-register')
+      expect(server.db.databaseName).toBe(process.env.MONGO_DATABASE)
     })
 
     test('MongoDb should have expected namespace', () => {
-      expect(server.db.namespace).toBe('marine-licensing-public-register')
+      expect(server.db.namespace).toBe(process.env.MONGO_DATABASE)
     })
   })
 
   describe('Shut down', () => {
-    beforeAll(async () => {
-      // Dynamic import needed due to config being updated by vitest-mongodb
-      const { createServer } = await import('#/server.js')
-
-      server = await createServer()
-      await server.initialize()
-    })
-
     test('Should close Mongo client on server stop', async () => {
-      const closeSpy = vi.spyOn(server.mongoClient, 'close')
+      server.mongoClient.close = vi.fn().mockResolvedValue()
       await server.stop({ timeout: 1000 })
 
-      expect(closeSpy).toHaveBeenCalledWith(true)
+      // Hapi emits 'stop' without awaiting async listeners, so close runs after
+      // waitForMongoIdle yields back to the event loop.
+      await vi.waitFor(() => {
+        expect(server.mongoClient.close).toHaveBeenCalled()
+      })
     })
   })
 })

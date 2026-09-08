@@ -31,13 +31,59 @@ export const mongoDb = {
       server.events.on('stop', async () => {
         server.logger.info('Closing Mongo client')
         try {
-          await client.close(true)
+          // MongoDB 7 interrupts checked-out connections on close before sessions
+          // finish releasing them, which becomes an unhandled MongoClientClosedError.
+          await waitForMongoIdle(client)
+        } catch (e) {
+          server.logger.error(e, 'failed waiting for mongo idle')
+        }
+
+        try {
+          await client.close()
         } catch (e) {
           server.logger.error(e, 'failed to close mongo client')
         }
       })
     }
   }
+}
+
+async function endActiveSessions(client) {
+  const sessions = client.s?.activeSessions
+  if (!sessions?.size) {
+    return
+  }
+
+  await Promise.all(
+    Array.from(sessions, (session) =>
+      session.endSession().catch(() => undefined)
+    )
+  )
+}
+
+function checkedOutConnectionCount(client) {
+  const servers = client.topology?.s?.servers
+  if (!servers) {
+    return 0
+  }
+
+  let count = 0
+  for (const server of servers.values()) {
+    count += server.pool?.checkedOut?.size ?? 0
+  }
+  return count
+}
+
+async function waitForMongoIdle(client, timeoutMs = 200) {
+  const deadline = Date.now() + timeoutMs
+
+  do {
+    await endActiveSessions(client)
+    if (checkedOutConnectionCount(client) === 0) {
+      return
+    }
+    await new Promise((resolve) => setImmediate(resolve))
+  } while (Date.now() < deadline)
 }
 
 async function createIndexes(db) {

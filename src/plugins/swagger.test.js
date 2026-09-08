@@ -8,6 +8,10 @@ describe('#swagger', () => {
     await server.initialize()
   })
 
+  afterAll(async () => {
+    await server.stop({ timeout: 1000 })
+  })
+
   test('Should serve Redoc documentation page', async () => {
     const { statusCode, headers, payload } = await server.inject({
       method: 'GET',

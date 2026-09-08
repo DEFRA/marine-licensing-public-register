@@ -209,7 +209,7 @@ docker run -e PORT=3001 -p 3001:3001 marine-licensing-public-register
 A local environment with:
 
 - Redis
-- MongoDB
+- MongoDB (single-member replica set — see below)
 - This service
 
 Local SNS/SQS (including the `marine_licensing_public_register` topic, queue, DLQ, and subscription) come from **LocalStack in marine-licensing-backend**. Start that stack first so both services share the `cdp-tenant` Docker network, then:
@@ -219,6 +219,29 @@ docker compose up --build -d
 ```
 
 When running this service on the host (`npm run dev`), set `SQS_ENDPOINT=http://localhost:4566` (the default) so it reaches LocalStack via the backend compose port mapping.
+
+#### MongoDB
+
+The composed MongoDB runs as a single-member replica set (`rs0`) so that
+multi-document transactions work locally, matching the replica sets in all
+deployed environments. The in-memory test server is also a single-member
+replica set, with its binary version pinned in
+`.vite/mongo-memory-server.js` to match the `mongo` image version in
+`compose.yml`.
+
+Inside Docker the app uses `mongodb://mongodb:27017/`. The replica set
+advertises its member as `mongodb:27017`, which only resolves inside the
+Docker network. Clients on the host (mongosh, MongoDB Compass, `npm run dev`)
+must skip topology discovery by connecting with:
+
+```text
+mongodb://localhost:27017/?directConnection=true
+```
+
+The replica set is initiated automatically by the `mongodb` service
+healthcheck. Existing `mongodb-data` volumes survive the upgrade; if a local
+instance ever ends up in a broken replica-set state, reset it with
+`docker compose down -v` (this deletes local data).
 
 MongoDB records can also be created when Mongo starts by editing the scripts in `./compose/mongo/`.
 
