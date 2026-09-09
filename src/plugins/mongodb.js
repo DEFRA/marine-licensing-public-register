@@ -29,69 +29,18 @@ export const mongoDb = {
       server.decorate('request', 'locker', () => locker, { apply: true })
 
       server.events.on('stop', async () => {
-        await closeMongoClient(server, client)
+        server.logger.info('Closing Mongo client')
+        await client.close(true)
       })
     }
   }
 }
 
-export async function closeMongoClient(server, client) {
-  server.logger.info('Closing Mongo client')
-  try {
-    // MongoDB 7 interrupts checked-out connections on close before sessions
-    // finish releasing them, which becomes an unhandled MongoClientClosedError.
-    await waitForMongoIdle(client)
-  } catch (e) {
-    server.logger.error(e, 'failed waiting for mongo idle')
-  }
-
-  try {
-    await client.close()
-  } catch (e) {
-    server.logger.error(e, 'failed to close mongo client')
-  }
-}
-
-export async function endActiveSessions(client) {
-  const sessions = client.s?.activeSessions
-  if (!sessions?.size) {
-    return
-  }
-
-  await Promise.all(
-    Array.from(sessions, (session) =>
-      session.endSession().catch(() => undefined)
-    )
-  )
-}
-
-export function checkedOutConnectionCount(client) {
-  const servers = client.topology?.s?.servers
-  if (!servers) {
-    return 0
-  }
-
-  let count = 0
-  for (const server of servers.values()) {
-    count += server.pool?.checkedOut?.size ?? 0
-  }
-  return count
-}
-
-export async function waitForMongoIdle(client, timeoutMs = 200) {
-  const deadline = Date.now() + timeoutMs
-
-  do {
-    await endActiveSessions(client)
-    if (checkedOutConnectionCount(client) === 0) {
-      return
-    }
-    await new Promise((resolve) => setImmediate(resolve))
-  } while (Date.now() < deadline)
-}
-
 async function createIndexes(db) {
-  await db.collection('mongo-locks').createIndex({ id: 1 })
+  // Ensure the mongo-locks unique index exists before we attempt to acquire a lock.
+  // LockManager creates it in its constructor but does not await it.
+  // See: node_modules/mongo-locks/dist/esm/index.js
+  await db.collection('mongo-locks').createIndex({ action: 1 }, { unique: true })
 
   await db
     .collection(APPLICATION_SUBMISSIONS_COLLECTION)

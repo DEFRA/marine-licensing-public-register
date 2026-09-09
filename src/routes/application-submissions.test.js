@@ -11,6 +11,9 @@ describe('GET /application-submissions', () => {
 
     server = await createServer()
     await server.initialize()
+    await server.db
+      .collection('mongo-locks')
+      .createIndex({ action: 1 }, { unique: true })
   })
 
   beforeEach(async () => {
