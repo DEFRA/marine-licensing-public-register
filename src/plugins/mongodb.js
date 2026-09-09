@@ -40,7 +40,9 @@ async function createIndexes(db) {
   // Ensure the mongo-locks unique index exists before we attempt to acquire a lock.
   // LockManager creates it in its constructor but does not await it.
   // See: node_modules/mongo-locks/dist/esm/index.js
-  await db.collection('mongo-locks').createIndex({ action: 1 }, { unique: true })
+  await db
+    .collection('mongo-locks')
+    .createIndex({ action: 1 }, { unique: true })
 
   await db
     .collection(APPLICATION_SUBMISSIONS_COLLECTION)
