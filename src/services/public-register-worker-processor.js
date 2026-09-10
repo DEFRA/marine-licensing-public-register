@@ -15,6 +15,35 @@ const requiredFields = [
   'applicationReference'
 ]
 
+const buildRecordFromMessage = (body) => {
+  const record = {
+    applicationType: body.applicationType,
+    eventType: body.eventType,
+    applicationId: body.applicationId,
+    applicationReference: body.applicationReference
+  }
+
+  if (isNonEmptyString(body.projectName)) {
+    record.projectName = body.projectName
+  }
+
+  if (Array.isArray(body.marinePlanAreas)) {
+    record.marinePlanAreas = body.marinePlanAreas.filter((area) =>
+      isNonEmptyString(area)
+    )
+  }
+
+  if (isNonEmptyString(body.dateSubmitted)) {
+    record.dateSubmitted = body.dateSubmitted
+  }
+
+  if (isNonEmptyString(body.status)) {
+    record.status = body.status
+  }
+
+  return record
+}
+
 export const processPublicRegisterMessage = async (server, message) => {
   const { db, logger } = server
   const { sqsQueueName } = config.get('publicRegister')
@@ -36,12 +65,7 @@ export const processPublicRegisterMessage = async (server, message) => {
     )
   }
 
-  const record = {
-    applicationType: body.applicationType,
-    eventType: body.eventType,
-    applicationId: body.applicationId,
-    applicationReference: body.applicationReference
-  }
+  const record = buildRecordFromMessage(body)
 
   logger.info(
     {

@@ -6,6 +6,13 @@ describe('#swagger', () => {
 
     server = await createServer()
     await server.initialize()
+    await server.db
+      .collection('mongo-locks')
+      .createIndex({ action: 1 }, { unique: true })
+  })
+
+  afterAll(async () => {
+    await server.stop({ timeout: 1000 })
   })
 
   test('Should serve Redoc documentation page', async () => {
@@ -23,7 +30,7 @@ describe('#swagger', () => {
     )
   })
 
-  test('Should serve OpenAPI spec for the example endpoints', async () => {
+  test('Should serve OpenAPI spec for the application submissions endpoint', async () => {
     const { statusCode, result } = await server.inject({
       method: 'GET',
       url: '/swagger.json'
@@ -37,17 +44,13 @@ describe('#swagger', () => {
     expect(result.info.description).toBe(
       'API documentation for the Marine Licensing Public Register'
     )
-    expect(result.paths['/example'].get).toEqual(
+    expect(result.paths['/application-submissions'].get).toEqual(
       expect.objectContaining({
-        summary: 'List example records',
-        tags: expect.arrayContaining(['example'])
+        summary: 'List published application submissions',
+        tags: expect.arrayContaining(['application-submissions'])
       })
     )
-    expect(result.paths['/example/{exampleId}'].get).toEqual(
-      expect.objectContaining({
-        summary: 'Get an example record',
-        tags: expect.arrayContaining(['example'])
-      })
-    )
+    expect(result.paths['/example']).toBeUndefined()
+    expect(result.paths['/example/{exampleId}']).toBeUndefined()
   })
 })

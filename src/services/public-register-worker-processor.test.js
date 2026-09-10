@@ -17,7 +17,11 @@ const payload = {
   applicationType: 'exemption',
   eventType: 'submitted',
   applicationId: '64f1abc',
-  applicationReference: 'EXE/2026/00012'
+  applicationReference: 'EXE/2026/00012',
+  projectName: 'South coast sea samples',
+  marinePlanAreas: ['South'],
+  dateSubmitted: '2026-03-18T10:00:00.000Z',
+  status: 'Active'
 }
 
 const buildMessage = (body) => ({
@@ -99,6 +103,51 @@ describe('processPublicRegisterMessage', () => {
 
     expect(upsertApplicationSubmission).not.toHaveBeenCalled()
     expect(deletePublicRegisterMessage).not.toHaveBeenCalled()
+  })
+
+  it('upserts required fields only when optional fields are absent', async () => {
+    const server = buildServer()
+    const requiredOnly = {
+      applicationType: payload.applicationType,
+      eventType: payload.eventType,
+      applicationId: payload.applicationId,
+      applicationReference: payload.applicationReference
+    }
+
+    await processPublicRegisterMessage(server, buildMessage(requiredOnly))
+
+    expect(upsertApplicationSubmission).toHaveBeenCalledWith(
+      server.db,
+      requiredOnly
+    )
+    expect(deletePublicRegisterMessage).toHaveBeenCalledWith(
+      sqsQueueName,
+      'receipt-1'
+    )
+  })
+
+  it('omits blank optional fields and empty marine plan area values', async () => {
+    const server = buildServer()
+    const withBlanks = {
+      applicationType: payload.applicationType,
+      eventType: payload.eventType,
+      applicationId: payload.applicationId,
+      applicationReference: payload.applicationReference,
+      projectName: '   ',
+      marinePlanAreas: ['South', '', '  ', 'North'],
+      dateSubmitted: '',
+      status: ' '
+    }
+
+    await processPublicRegisterMessage(server, buildMessage(withBlanks))
+
+    expect(upsertApplicationSubmission).toHaveBeenCalledWith(server.db, {
+      applicationType: payload.applicationType,
+      eventType: payload.eventType,
+      applicationId: payload.applicationId,
+      applicationReference: payload.applicationReference,
+      marinePlanAreas: ['South', 'North']
+    })
   })
 
   it('does not delete the message when upsert fails so SQS can retry then dead-letter it', async () => {
