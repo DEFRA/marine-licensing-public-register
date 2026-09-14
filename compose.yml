@@ -7,7 +7,13 @@ services:
       - cdp-tenant
 
   mongodb:
+    # Single-member replica set so local dev supports Mongo transactions,
+    # matching the replica sets in all deployed environments. The healthcheck
+    # initiates the set: it retries until mongod is up, rs.initiate() runs
+    # once, and rs.status() succeeds thereafter, so healthy implies the set
+    # is initiated and writable.
     image: mongo:7.0.28
+    command: ['--replSet', 'rs0', '--bind_ip_all']
     networks:
       - cdp-tenant
     ports:
@@ -15,12 +21,21 @@ services:
     volumes:
       - ./compose/mongo:/docker-entrypoint-initdb.d:ro
       - mongodb-data:/data
+    restart: always
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.hello().ok"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      test:
+        [
+          'CMD',
+          'mongosh',
+          '--quiet',
+          '--eval',
+          "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}).ok }"
+        ]
+      interval: 5s
+      timeout: 30s
+      start_period: 5s
+      start_interval: 1s
+      retries: 30
 
   ################################################################################
 
@@ -37,7 +52,7 @@ services:
       - 'mongodb:mongodb'
     depends_on:
       mongodb:
-        condition: service_started
+        condition: service_healthy
     env_file:
       - 'compose/aws.env'
     environment:

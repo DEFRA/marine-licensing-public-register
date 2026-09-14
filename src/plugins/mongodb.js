@@ -30,21 +30,19 @@ export const mongoDb = {
 
       server.events.on('stop', async () => {
         server.logger.info('Closing Mongo client')
-        try {
-          await client.close(true)
-        } catch (e) {
-          server.logger.error(e, 'failed to close mongo client')
-        }
+        await client.close(true)
       })
     }
   }
 }
 
 async function createIndexes(db) {
-  await db.collection('mongo-locks').createIndex({ id: 1 })
-
-  // Example of how to create a mongodb index. Remove as required
-  await db.collection('example-data').createIndex({ id: 1 })
+  // Ensure the mongo-locks unique index exists before we attempt to acquire a lock.
+  // LockManager creates it in its constructor but does not await it.
+  // See: node_modules/mongo-locks/dist/esm/index.js
+  await db
+    .collection('mongo-locks')
+    .createIndex({ action: 1 }, { unique: true })
 
   await db
     .collection(APPLICATION_SUBMISSIONS_COLLECTION)
