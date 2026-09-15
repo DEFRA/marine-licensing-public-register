@@ -136,7 +136,7 @@ export const config = convict({
     },
     sqs: {
       endpoint: {
-        doc: 'AWS SQS endpoint. Use LocalStack locally (e.g. from marine-licensing-backend); CDP injects SQS_ENDPOINT in deployed environments.',
+        doc: 'AWS SQS endpoint. Use Floci locally (e.g. from marine-licensing-backend); CDP injects SQS_ENDPOINT in deployed environments.',
         format: String,
         default: 'http://localhost:4566',
         env: 'SQS_ENDPOINT'
