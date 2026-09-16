@@ -39,7 +39,7 @@ services:
 
   ################################################################################
 
-  # Local AWS (SNS/SQS) is provided by LocalStack from marine-licensing-backend
+  # Local AWS (SNS/SQS) is provided by Floci from marine-licensing-backend
   # compose (shared cdp-tenant network). Start that stack first so the
   # marine_licensing_public_register topic/queue/subscription exist.
   marine-licensing-public-register:
@@ -59,7 +59,7 @@ services:
       PORT: 3001
       NODE_ENV: development
       MONGO_URI: mongodb://mongodb:27017/
-      SQS_ENDPOINT: http://localstack:4566
+      SQS_ENDPOINT: http://floci:4566
     networks:
       - cdp-tenant
     volumes:

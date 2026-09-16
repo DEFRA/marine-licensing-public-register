@@ -212,13 +212,13 @@ A local environment with:
 - MongoDB (single-member replica set — see below)
 - This service
 
-Local SNS/SQS (including the `marine_licensing_public_register` topic, queue, DLQ, and subscription) come from **LocalStack in marine-licensing-backend**. Start that stack first so both services share the `cdp-tenant` Docker network, then:
+Local SNS/SQS (including the `marine_licensing_public_register` topic, queue, DLQ, and subscription) come from **Floci in marine-licensing-backend**. Start that stack first so both services share the `cdp-tenant` Docker network, then:
 
 ```bash
 docker compose up --build -d
 ```
 
-When running this service on the host (`npm run dev`), set `SQS_ENDPOINT=http://localhost:4566` (the default) so it reaches LocalStack via the backend compose port mapping.
+When running this service on the host (`npm run dev`), set `SQS_ENDPOINT=http://localhost:4566` (the default) so it reaches Floci via the backend compose port mapping.
 
 #### MongoDB
 
