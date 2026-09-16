@@ -8,6 +8,10 @@ updates:
 
     # Group packages into shared PR
     groups:
+      aws-sdk:
+        patterns:
+          - '@aws-sdk/*'
+
       lint:
         patterns:
           - 'prettier'
@@ -25,6 +29,9 @@ updates:
         patterns:
           - 'husky'
           - 'vitest'
+          - 'vitest-*'
+          - '@vitest/*'
+          - 'vite'
           - 'nodemon'
           - 'npm-run-all'
 
@@ -32,9 +39,10 @@ updates:
       - dependency-name: 'eslint-*'
       - dependency-name: 'eslint'
 
-    # Schedule run every Monday, local time
+    # Schedule: weekly on Tuesday (Europe/London)
     schedule:
       interval: weekly
+      day: tuesday
       time: '10:30'
       timezone: 'Europe/London'
 
@@ -48,8 +56,9 @@ updates:
   - package-ecosystem: github-actions
     directory: /
 
-    # Schedule run every Monday, local time
+    # Schedule: weekly on Tuesday (Europe/London)
     schedule:
       interval: weekly
+      day: tuesday
       time: '10:30'
       timezone: 'Europe/London'
