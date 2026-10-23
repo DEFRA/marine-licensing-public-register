@@ -32,7 +32,7 @@ The marine licensing backend publishes messages to the `marine_licensing_public_
 
 ### Node.js
 
-Please install [Node.js](http://nodejs.org/) `>= v24` and [npm](https://nodejs.org/) `>= v11`. You will find it
+Please install [Node.js](http://nodejs.org/) `>= v24.22.1` and [npm](https://nodejs.org/) `>= v11`. You will find it
 easier to use the Node Version Manager [nvm](https://github.com/creationix/nvm)
 
 To use the correct version of Node.js for this application, via nvm:
